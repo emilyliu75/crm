@@ -1,8 +1,20 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, flash
-from models import db, Client, User
+from models import db, Client, User, EmailTemplate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import smtplib
 from email.mime.text import MIMEText
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+EMAIL_SIGNATURE = """
+<br>--<br>
+<b>Kind regards,</b><br>
+<img src="https://i.imgur.com/x2rTMJw.png" width="120">
+<br>
+<b>Divi Design </b><br>
+<a href="https://divi-design.co.uk">https://divi-design.co.uk</a>
+"""
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///crm.db'
@@ -83,7 +95,8 @@ def add_client():
         name = request.form['name']
         email = request.form['email']
         service = request.form['service']
-        client = Client(name=name, email=email, service=service)
+        address = request.form['address']
+        client = Client(name=name, email=email, address=address, service=service)
         db.session.add(client)
         db.session.commit()
         return redirect(url_for('clients'))
@@ -96,6 +109,7 @@ def edit_client(client_id):
     if request.method == 'POST':
         client.name = request.form['name']
         client.email = request.form['email']
+        address = request.form['address']
         client.service = request.form['service']
         db.session.commit()
         return redirect(url_for('clients'))
@@ -112,7 +126,6 @@ def delete_client(client_id):
 @app.route('/send_email', methods=['GET', 'POST'])
 @login_required
 def send_email():
-    from models import Client, EmailTemplate
     clients = Client.query.all()
     templates = EmailTemplate.query.all()
     message = ''
@@ -121,32 +134,79 @@ def send_email():
         template_id = int(request.form['template'])
         client = Client.query.get_or_404(client_id)
         tpl = EmailTemplate.query.get_or_404(template_id)
-        subject = tpl.subject.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
-        body = tpl.body.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
-        # Optionally allow editing in form:
-        if request.form.get('body'): body = request.form['body']
-        if request.form.get('subject'): subject = request.form['subject']
+        subject = request.form.get('subject') or tpl.subject
+        body = request.form.get('body') or tpl.body
 
-        sender = "your@email.com"  # Or use from app.config or env var
-        sender_password = "yourpassword" # Use secure storage!
+        subject = subject.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
+        body = body.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
+        body += EMAIL_SIGNATURE
+        sender = os.environ.get('EMAIL_USER')
+        password = os.environ.get('EMAIL_PASS')
         recipient = client.email
+        print(f"From: {sender}")
+        print(f"To: {recipient}")
 
-        msg = MIMEText(body)
+        msg = MIMEText(body, 'html')
         msg['Subject'] = subject
         msg['From'] = sender
         msg['To'] = recipient
 
+
+
         try:
             with smtplib.SMTP('smtp-relay.brevo.com', 587) as smtp:
+                smtp.ehlo()
                 smtp.starttls()
-                smtp.login(sender, sender_password)
-                smtp.sendmail(sender, recipient, msg.as_string())
+                smtp.login(sender, password)
+                smtp.sendmail(sender, [recipient], msg.as_string())
             flash('Email sent successfully!', 'success')
         except Exception as e:
             flash(f'Failed to send email: {e}', 'danger')
         return redirect(url_for('send_email'))
 
     return render_template('send_email.html', clients=clients, templates=templates)
+
+@app.route('/templates')
+@login_required
+def templates():
+    templates = EmailTemplate.query.all()
+    return render_template('templates.html', templates=templates)
+
+@app.route('/templates/add', methods=['GET', 'POST'])
+@login_required
+def add_template():
+    if request.method == 'POST':
+        name = request.form['name']
+        subject = request.form['subject']
+        body = request.form['body']
+        template = EmailTemplate(name=name, subject=subject, body=body)
+        db.session.add(template)
+        db.session.commit()
+        flash("Template added.", "success")
+        return redirect(url_for('templates'))
+    return render_template('add_template.html')
+
+@app.route('/templates/edit/<int:template_id>', methods=['GET', 'POST'])
+@login_required
+def edit_template(template_id):
+    template = EmailTemplate.query.get_or_404(template_id)
+    if request.method == 'POST':
+        template.name = request.form['name']
+        template.subject = request.form['subject']
+        template.body = request.form['body']
+        db.session.commit()
+        flash("Template updated.", "success")
+        return redirect(url_for('templates'))
+    return render_template('edit_template.html', template=template)
+
+@app.route('/templates/delete/<int:template_id>', methods=['POST'])
+@login_required
+def delete_template(template_id):
+    template = EmailTemplate.query.get_or_404(template_id)
+    db.session.delete(template)
+    db.session.commit()
+    flash("Template deleted.", "success")
+    return redirect(url_for('templates'))
 
 if __name__ == '__main__':
     with app.app_context():

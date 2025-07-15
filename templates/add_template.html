@@ -1,0 +1,29 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Add Email Template</h2>
+<form method="post">
+  <div class="mb-3">
+    <label for="name">Template Name</label>
+    <input class="form-control" name="name" id="name" required />
+  </div>
+  <div class="mb-3">
+    <label for="subject">Subject</label>
+    <input class="form-control" name="subject" id="subject" required />
+  </div>
+  <div class="mb-3">
+    <label for="body">Body</label>
+    <textarea
+      class="form-control"
+      name="body"
+      id="body"
+      rows="8"
+      required
+    ></textarea>
+    <small class="form-text text-muted">
+      You can use <code>{{'{{name}}'}}</code>, <code>{{'{{email}}'}}</code>,
+      <code>{{'{{service}}'}}</code> etc. in your template.
+    </small>
+  </div>
+  <button class="btn btn-success">Add Template</button>
+  <a href="{{ url_for('templates') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

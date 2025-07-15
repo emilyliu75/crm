@@ -8,6 +8,7 @@ class Client(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80))
     email = db.Column(db.String(120), unique=True)
+    address = db.Column(db.String(255))
     service = db.Column(db.String(120))
 
 class User(UserMixin, db.Model):

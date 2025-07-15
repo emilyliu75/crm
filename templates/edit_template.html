@@ -1,0 +1,33 @@
+{% extends 'base.html' %} {% block content %}
+<h2>{% if template %}Edit{% else %}Add{% endif %} Template</h2>
+<form method="post">
+  <div class="mb-3">
+    <label>Name</label>
+    <input
+      class="form-control"
+      name="name"
+      value="{{ template.name if template else '' }}"
+      required
+    />
+  </div>
+  <div class="mb-3">
+    <label>Subject</label>
+    <input
+      class="form-control"
+      name="subject"
+      value="{{ template.subject if template else '' }}"
+      required
+    />
+  </div>
+  <div class="mb-3">
+    <label>Body</label>
+    <textarea class="form-control" name="body" rows="8" required>
+{{ template.body if template else '' }}</textarea
+    >
+  </div>
+  <button class="btn btn-success">
+    {% if template %}Update{% else %}Add{% endif %} Template
+  </button>
+  <a href="{{ url_for('templates') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

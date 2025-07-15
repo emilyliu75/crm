@@ -14,16 +14,21 @@
     <label>Email</label>
     <input
       class="form-control"
-      type="email"
       name="email"
       value="{{ client.email }}"
+      type="email"
       required
     />
+  </div>
+  <div class="mb-3">
+    <label>Address</label>
+    <input class="form-control" name="address" value="{{ client.address }}" />
   </div>
   <div class="mb-3">
     <label>Service</label>
     <input class="form-control" name="service" value="{{ client.service }}" />
   </div>
-  <button class="btn btn-primary">Save Changes</button>
+  <button class="btn btn-primary">Update Client</button>
+  <a href="{{ url_for('clients') }}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

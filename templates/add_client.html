@@ -7,12 +7,17 @@
   </div>
   <div class="mb-3">
     <label>Email</label>
-    <input class="form-control" type="email" name="email" required />
+    <input class="form-control" name="email" type="email" required />
+  </div>
+  <div class="mb-3">
+    <label>Address</label>
+    <input class="form-control" name="address" />
   </div>
   <div class="mb-3">
     <label>Service</label>
     <input class="form-control" name="service" />
   </div>
   <button class="btn btn-success">Add Client</button>
+  <a href="{{ url_for('clients') }}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

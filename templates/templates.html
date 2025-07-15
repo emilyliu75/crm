@@ -1,0 +1,38 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Email Templates</h2>
+<a href="{{ url_for('add_template') }}" class="btn btn-success mb-3"
+  >Add Template</a
+>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Subject</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tpl in templates %}
+    <tr>
+      <td>{{ tpl.name }}</td>
+      <td>{{ tpl.subject }}</td>
+      <td>
+        <a
+          href="{{ url_for('edit_template', template_id=tpl.id) }}"
+          class="btn btn-primary btn-sm"
+          >Edit</a
+        >
+        <form
+          action="{{ url_for('delete_template', template_id=tpl.id) }}"
+          method="post"
+          style="display: inline"
+          onsubmit="return confirm('Delete this template?');"
+        >
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
