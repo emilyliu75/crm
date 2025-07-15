@@ -1,0 +1,72 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Send Email</h2>
+<form method="post">
+  <div class="mb-3">
+    <label>Client</label>
+    <select class="form-select" name="client" required>
+      <option value="" disabled selected>Select a client</option>
+      {% for client in clients %}
+      <option value="{{ client.id }}">
+        {{ client.name }} ({{ client.email }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Template</label>
+    <select
+      class="form-select"
+      name="template"
+      required
+      onchange="updatePreview()"
+    >
+      <option value="" disabled selected>Select a template</option>
+      {% for tpl in templates %}
+      <option
+        value="{{ tpl.id }}"
+        data-subject="{{ tpl.subject }}"
+        data-body="{{ tpl.body | e }}"
+      >
+        {{ tpl.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3">
+    <label>Subject</label>
+    <input class="form-control" name="subject" id="subject" required />
+  </div>
+  <div class="mb-3">
+    <label>Message</label>
+    <textarea
+      class="form-control"
+      name="body"
+      id="body"
+      rows="6"
+      required
+    ></textarea>
+  </div>
+  <button class="btn btn-primary">Send Email</button>
+</form>
+
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+%} {% for category, msg in messages %}
+<div class="alert alert-{{ category }} mt-3">{{ msg }}</div>
+{% endfor %} {% endif %} {% endwith %}
+
+<script>
+  // Simple preview logic for template selection
+  document.addEventListener("DOMContentLoaded", function () {
+    const templateSelect = document.querySelector('select[name="template"]');
+    const subjectInput = document.getElementById("subject");
+    const bodyInput = document.getElementById("body");
+    if (templateSelect) {
+      templateSelect.addEventListener("change", function () {
+        const selected = templateSelect.selectedOptions[0];
+        subjectInput.value = selected.dataset.subject || "";
+        bodyInput.value = selected.dataset.body || "";
+      });
+    }
+  });
+</script>
+{% endblock %}

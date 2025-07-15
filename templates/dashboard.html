@@ -1,0 +1,40 @@
+{% extends 'base.html' %} {% block content %}
+<h2>CRM Dashboard</h2>
+<div class="row mt-4">
+  <div class="col-md-6 mb-4">
+    <div class="card text-bg-primary h-100">
+      <div class="card-header">Clients</div>
+      <div class="card-body d-flex flex-column justify-content-between">
+        <div>
+          <h4 class="card-title">{{ client_count }}</h4>
+          <p class="card-text">Total clients in the system</p>
+        </div>
+        <div>
+          <a href="{{ url_for('clients') }}" class="btn btn-light btn-sm mt-2"
+            >View Clients</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-4">
+    <div class="card text-bg-success h-100">
+      <div class="card-header">Send Email</div>
+      <div class="card-body d-flex flex-column justify-content-between">
+        <div>
+          <p class="card-text">
+            Quickly send an email to any client using your templates.
+          </p>
+        </div>
+        <div>
+          <a
+            href="{{ url_for('send_email') }}"
+            class="btn btn-light btn-sm mt-2"
+            >Send Email</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
