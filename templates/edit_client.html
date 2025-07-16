@@ -25,6 +25,14 @@
     <input class="form-control" name="address" value="{{ client.address }}" />
   </div>
   <div class="mb-3">
+    <label>Post Code</label>
+    <input
+      class="form-control"
+      name="postcode"
+      value="{{ client.postcode if client else '' }}"
+    />
+  </div>
+  <div class="mb-3">
     <label>Service</label>
     <input class="form-control" name="service" value="{{ client.service }}" />
   </div>

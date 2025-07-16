@@ -3,18 +3,12 @@ from models import db, Client, User, EmailTemplate
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import smtplib
 from email.mime.text import MIMEText
+from utils import EMAIL_SIGNATURE, plaintext_to_html
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-EMAIL_SIGNATURE = """
-<br>--<br>
-<b>Kind regards,</b><br>
-<img src="https://i.imgur.com/x2rTMJw.png" width="120">
-<br>
-<b>Divi Design </b><br>
-<a href="https://divi-design.co.uk">https://divi-design.co.uk</a>
-"""
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///crm.db'
@@ -31,7 +25,7 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- User Registration (use once for first admin user, then remove if you wish) ---
+#  User Registration
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -57,7 +51,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user)
-            return redirect(url_for('clients'))
+            return redirect(url_for('dashboard'))
         else:
             flash('Invalid username or password')
     return render_template('login.html')
@@ -79,8 +73,8 @@ def home():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    client_count = Client.query.count()
-    return render_template('dashboard.html', client_count=client_count)
+    clients = Client.query.all()
+    return render_template('dashboard.html', client_count=len(clients), clients=clients)
 
 @app.route('/clients')
 @login_required
@@ -96,7 +90,8 @@ def add_client():
         email = request.form['email']
         service = request.form['service']
         address = request.form['address']
-        client = Client(name=name, email=email, address=address, service=service)
+        postcode = request.form['postcode']
+        client = Client(name=name, email=email, address=address, service=service, postcode=postcode)
         db.session.add(client)
         db.session.commit()
         return redirect(url_for('clients'))
@@ -110,6 +105,7 @@ def edit_client(client_id):
         client.name = request.form['name']
         client.email = request.form['email']
         address = request.form['address']
+        client.postcode = request.form['postcode']
         client.service = request.form['service']
         db.session.commit()
         return redirect(url_for('clients'))
@@ -123,35 +119,36 @@ def delete_client(client_id):
     db.session.commit()
     return redirect(url_for('clients'))
 
-@app.route('/send_email', methods=['GET', 'POST'])
+
+# --- Email Sending ---
+@app.route('/send_email/<int:client_id>', methods=['GET', 'POST'])
 @login_required
-def send_email():
-    clients = Client.query.all()
+def send_email(client_id):
+    client = Client.query.get_or_404(client_id)
     templates = EmailTemplate.query.all()
-    message = ''
     if request.method == 'POST':
-        client_id = int(request.form['client'])
         template_id = int(request.form['template'])
-        client = Client.query.get_or_404(client_id)
         tpl = EmailTemplate.query.get_or_404(template_id)
+
+        # Get possibly user-edited subject and body
         subject = request.form.get('subject') or tpl.subject
         body = request.form.get('body') or tpl.body
 
-        subject = subject.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
-        body = body.replace('{{name}}', client.name).replace('{{service}}', client.service or '')
-        body += EMAIL_SIGNATURE
+        # Fill in template variables
+        subject = subject.replace('{{name}}', client.name or '').replace('{{service}}', client.service or '')
+        body = body.replace('{{name}}', client.name or '').replace('{{service}}', client.service or '')
+
+        # Convert plain text body to HTML and add signature
+        html_body = plaintext_to_html(body) + EMAIL_SIGNATURE
+
         sender = os.environ.get('EMAIL_USER')
         password = os.environ.get('EMAIL_PASS')
         recipient = client.email
-        print(f"From: {sender}")
-        print(f"To: {recipient}")
 
-        msg = MIMEText(body, 'html')
+        msg = MIMEText(html_body, 'html')
         msg['Subject'] = subject
         msg['From'] = sender
         msg['To'] = recipient
-
-
 
         try:
             with smtplib.SMTP('smtp-relay.brevo.com', 587) as smtp:
@@ -162,9 +159,9 @@ def send_email():
             flash('Email sent successfully!', 'success')
         except Exception as e:
             flash(f'Failed to send email: {e}', 'danger')
-        return redirect(url_for('send_email'))
+        return redirect(url_for('send_email', client_id=client.id))
 
-    return render_template('send_email.html', clients=clients, templates=templates)
+    return render_template('send_email.html', client=client, templates=templates)
 
 @app.route('/templates')
 @login_required

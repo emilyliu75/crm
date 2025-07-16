@@ -2,28 +2,22 @@
 <h2>Add Email Template</h2>
 <form method="post">
   <div class="mb-3">
-    <label for="name">Template Name</label>
-    <input class="form-control" name="name" id="name" required />
+    <label>Name</label>
+    <input class="form-control" name="name" required />
   </div>
   <div class="mb-3">
-    <label for="subject">Subject</label>
-    <input class="form-control" name="subject" id="subject" required />
+    <label>Subject</label>
+    <input class="form-control" name="subject" required />
   </div>
   <div class="mb-3">
-    <label for="body">Body</label>
-    <textarea
-      class="form-control"
-      name="body"
-      id="body"
-      rows="8"
-      required
-    ></textarea>
-    <small class="form-text text-muted">
-      You can use <code>{{'{{name}}'}}</code>, <code>{{'{{email}}'}}</code>,
-      <code>{{'{{service}}'}}</code> etc. in your template.
+    <label>Body (plain text, use {{name}}, {{service}}, etc)</label>
+    <textarea class="form-control" name="body" rows="7" required></textarea>
+    <small class="text-muted">
+      Write your email in plain text. Use placeholders like
+      <code>{{name}}</code>, <code>{{service}}</code>.<br />
+      Line breaks and paragraphs will be formatted automatically.
     </small>
   </div>
-  <button class="btn btn-success">Add Template</button>
-  <a href="{{ url_for('templates') }}" class="btn btn-secondary">Cancel</a>
+  <button class="btn btn-primary">Add Template</button>
 </form>
 {% endblock %}
