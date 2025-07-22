@@ -1,16 +1,19 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, flash
-from models import db, Client, User, EmailTemplate
+from models import db, Client, User, EmailTemplate, EmailLog
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import smtplib
 from email.mime.text import MIMEText
-from utils import EMAIL_SIGNATURE, plaintext_to_html
+from utils import EMAIL_SIGNATURE, plaintext_to_html, strip_cid_images,send_and_save_email, fetch_emails_for_client
 import os
+import datetime
+from import_emails import poll_and_store_incoming
 from dotenv import load_dotenv
 load_dotenv()
 
-
+BCC_EMAIL = 'bcc@divi-design.co.uk'
 
 app = Flask(__name__)
+app.jinja_env.filters['strip_cid_images'] = strip_cid_images
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///crm.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'change-this-secret'
@@ -129,38 +132,17 @@ def send_email(client_id):
     if request.method == 'POST':
         template_id = int(request.form['template'])
         tpl = EmailTemplate.query.get_or_404(template_id)
-
-        # Get possibly user-edited subject and body
         subject = request.form.get('subject') or tpl.subject
         body = request.form.get('body') or tpl.body
-
-        # Fill in template variables
         subject = subject.replace('{{name}}', client.name or '').replace('{{service}}', client.service or '')
         body = body.replace('{{name}}', client.name or '').replace('{{service}}', client.service or '')
-
-        # Convert plain text body to HTML and add signature
         html_body = plaintext_to_html(body) + EMAIL_SIGNATURE
-
-        sender = os.environ.get('EMAIL_USER')
-        password = os.environ.get('EMAIL_PASS')
-        recipient = client.email
-
-        msg = MIMEText(html_body, 'html')
-        msg['Subject'] = subject
-        msg['From'] = sender
-        msg['To'] = recipient
-
         try:
-            with smtplib.SMTP('smtp-relay.brevo.com', 587) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.login(sender, password)
-                smtp.sendmail(sender, [recipient], msg.as_string())
+            send_and_save_email(subject, html_body, client.email, BCC_EMAIL)
             flash('Email sent successfully!', 'success')
         except Exception as e:
             flash(f'Failed to send email: {e}', 'danger')
         return redirect(url_for('send_email', client_id=client.id))
-
     return render_template('send_email.html', client=client, templates=templates)
 
 @app.route('/templates')
@@ -204,6 +186,16 @@ def delete_template(template_id):
     db.session.commit()
     flash("Template deleted.", "success")
     return redirect(url_for('templates'))
+
+@app.route('/clients/<int:client_id>/emails')
+@login_required
+def client_emails(client_id):
+    client = Client.query.get_or_404(client_id)
+    poll_and_store_incoming()
+    emails = EmailLog.query.filter(
+        (EmailLog.from_addr == client.email) | (EmailLog.to_addr == client.email)
+    ).order_by(EmailLog.date.desc()).limit(50).all()
+    return render_template('client_emails.html', client=client, emails=emails)
 
 if __name__ == '__main__':
     with app.app_context():

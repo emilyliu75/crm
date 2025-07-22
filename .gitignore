@@ -6,3 +6,4 @@ __pycache__/
 instance/
 .venv/
 .env
+delete_later.py

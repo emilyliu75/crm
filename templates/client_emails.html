@@ -1,0 +1,193 @@
+{% extends 'base.html' %} {% block content %}
+<h2>Emails (Sent &amp; Received) – {{ client.name }} ({{ client.email }})</h2>
+
+<div class="email-timeline">
+  {% for email in emails %} {% set is_sent = (email.from_addr ==
+  current_user.email or email.from_addr == 'y.rashid@divi-design.co.uk' or
+  email.from_addr == 'info@divi-design.co.uk') %}
+  <div class="email-bubble {% if is_sent %}sent{% else %}received{% endif %}">
+    <div class="bubble-header">
+      <span class="bubble-from"
+        ><b>From:</b>
+        <a href="#" class="compose-link" data-email="{{ email.to_addr }}"
+          >{{ email.from_addr }}</a
+        ></span
+      >
+      <span class="bubble-to"
+        ><b>To:</b>
+        <a href="#" class="compose-link" data-email="{{ email.to_addr }}"
+          >{{ email.to_addr }}</a
+        ></span
+      >
+      <span class="bubble-date"
+        >{{ email.date.strftime('%Y-%m-%d %H:%M') if email.date else '' }}</span
+      >
+    </div>
+    <div class="bubble-subject"><b>Subject:</b> {{ email.subject }}</div>
+    <div>
+      <a
+        class="btn btn-link p-0"
+        data-bs-toggle="collapse"
+        href="#msg-{{ loop.index0 }}"
+        role="button"
+        aria-expanded="false"
+        aria-controls="msg-{{ loop.index0 }}"
+      >
+        {{ 'Show' if not loop.first else 'Hide' }} email
+      </a>
+      <div
+        class="collapse {% if loop.first %}show{% endif %}"
+        id="msg-{{ loop.index0 }}"
+      >
+        <div class="bubble-body" style="margin-top: 8px">
+          {{ email.body|safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<a href="{{ url_for('clients') }}" class="btn btn-secondary mt-3"
+  >Back to Clients</a
+>
+<div
+  id="compose-popup"
+  style="
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 370px;
+    z-index: 2000;
+    box-shadow: 0 2px 20px #0002;
+  "
+>
+  <div class="card">
+    <div
+      class="card-header d-flex justify-content-between align-items-center p-2"
+    >
+      <strong>New Email</strong>
+      <button type="button" id="close-compose" class="btn-close"></button>
+    </div>
+    <form
+      id="compose-form"
+      class="card-body p-3"
+      method="post"
+      action="{{ url_for('send_email', client_id=client.id) }}"
+    >
+      <div class="mb-2">
+        <label class="form-label">To:</label>
+        <input
+          type="email"
+          name="to"
+          id="compose-to"
+          class="form-control form-control-sm"
+          required
+        />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Subject:</label>
+        <input
+          type="text"
+          name="subject"
+          id="compose-subject"
+          class="form-control form-control-sm"
+          required
+        />
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Message:</label>
+        <textarea
+          name="body"
+          id="compose-body"
+          class="form-control form-control-sm"
+          rows="5"
+          required
+        ></textarea>
+      </div>
+      <button type="submit" class="btn btn-success btn-sm">Send</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .email-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .email-bubble {
+    max-width: 65%;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    background: #f1f6fa;
+    box-shadow: 0 2px 8px #0001;
+    border: 1px solid #e4e4e4;
+    position: relative;
+  }
+  .email-bubble.sent {
+    align-self: flex-end;
+    background: #e8f6ef;
+    border-left: 5px solid #0a8852;
+  }
+  .email-bubble.received {
+    align-self: flex-start;
+    background: #fff3f2;
+    border-right: 5px solid #d52b1e;
+  }
+  .bubble-header {
+    font-size: 0.93em;
+    margin-bottom: 0.3em;
+    color: #555;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2em;
+  }
+  .bubble-subject {
+    font-size: 1.04em;
+    margin-bottom: 0.5em;
+    color: #1b4b5a;
+  }
+  .bubble-date {
+    margin-left: auto;
+    color: #888;
+    font-size: 0.89em;
+  }
+  .bubble-body {
+    background: #fafcff;
+    border-radius: 7px;
+    padding: 0.7em 1em;
+    font-size: 1em;
+  }
+  @media (max-width: 700px) {
+    .email-bubble,
+    .email-bubble.sent,
+    .email-bubble.received {
+      max-width: 100%;
+      padding: 0.8em;
+    }
+    .bubble-body {
+      padding: 0.6em 0.5em;
+    }
+  }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Open compose popup when clicking an email address
+    document.querySelectorAll(".compose-link").forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        document.getElementById("compose-popup").style.display = "block";
+        document.getElementById("compose-to").value = this.dataset.email || "";
+        document.getElementById("compose-subject").value = "";
+        document.getElementById("compose-body").value = "";
+      });
+    });
+    // Close compose popup
+    document.getElementById("close-compose").onclick = function () {
+      document.getElementById("compose-popup").style.display = "none";
+    };
+  });
+</script>
+{% endblock %}

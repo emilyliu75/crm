@@ -47,6 +47,11 @@
           class="btn btn-sm btn-primary"
           >Send Email</a
         >
+        <a
+          href="{{ url_for('client_emails', client_id=client.id) }}"
+          class="btn btn-sm btn-info"
+          >View Emails</a
+        >
       </td>
     </tr>
     {% endfor %}
